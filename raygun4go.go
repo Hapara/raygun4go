@@ -254,7 +254,7 @@ func (c *Client) SendError(error error) error {
 
 //Post holds postData (including a stack). This allows for asynchronous reporting to raygun (without losing the stack trace)
 type Post struct {
-	postData postData
+	postData PostData
 }
 
 //CreatePost is a wrapper to manually post errors to raygun. It also allows to specify the index for stack trace truncation.
@@ -265,7 +265,7 @@ func (c *Client) CreatePost(err error, stackTruncateAt int) Post {
 
 //SubmitPost is a wrapper to manually post errors to raygun asynchronously (having previously captured a stack trace on a separate goroutine, using c.CreatePost())
 func (c *Client) SubmitPost(post Post) error {
-	return c.submit(post.postData)
+	return c.Submit(post.postData)
 }
 
 // Submit takes care of actually sending the error to Raygun unless the silent

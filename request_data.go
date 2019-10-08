@@ -75,11 +75,11 @@ func newErrorData(err error, s StackTrace) ErrorData {
 
 // currentStack returns the current stack. However, it omits the first 4 entries
 // to avoid cluttering the trace with raygun4go-specific calls.
-func currentStack() stackTrace {
+func currentStack() StackTrace {
 	return currentStackAt(4)
 }
 
-func currentStackAt(index int) stackTrace {
+func currentStackAt(index int) StackTrace {
 	s := make(StackTrace, 0, 0)
 	Current(&s)
 	return s[index:]
