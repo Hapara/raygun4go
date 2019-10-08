@@ -15,7 +15,6 @@ import (
 func TestClient(t *testing.T) {
 	Convey("Client", t, func() {
 		c, _ := New("app", "key")
-		c.Silent(true)
 		So(c.appName, ShouldEqual, "app")
 		So(c.apiKey, ShouldEqual, "key")
 		So(c.context.Request, ShouldBeNil)
@@ -33,6 +32,61 @@ func TestClient(t *testing.T) {
 			c, err = New("test", "test")
 			So(c, ShouldHaveSameTypeAs, &Client{})
 			So(err, ShouldEqual, nil)
+		})
+
+		Convey("#Clone", func() {
+			t := []string{"Critical", "Urgent", "Fix it now!"}
+			c.Tags(t)
+
+			cd := "foo"
+			c.CustomData(cd)
+
+			r := &http.Request{}
+			c.Request(r)
+
+			v := "1.2.3"
+			c.Version(v)
+
+			u := "user"
+			c.User(u)
+
+			clone := c.Clone()
+
+			So(clone.appName, ShouldResemble, c.appName)
+			So(clone.apiKey, ShouldResemble, c.apiKey)
+			So(clone.silent, ShouldResemble, c.silent)
+			So(clone.logToStdOut, ShouldResemble, c.logToStdOut)
+			So(clone.asynchronous, ShouldResemble, c.asynchronous)
+			So(clone.context.Request, ShouldResemble, c.context.Request)
+			So(clone.context.Version, ShouldResemble, c.context.Version)
+			So(clone.context.Tags, ShouldResemble, c.context.Tags)
+			So(clone.context.CustomData, ShouldResemble, c.context.CustomData)
+			So(clone.context.User, ShouldResemble, c.context.User)
+			So(clone.context.identifier, ShouldResemble, c.context.identifier)
+			So(clone.context.GetCustomGroupingKey, ShouldResemble, c.context.GetCustomGroupingKey)
+
+			// After cloning, make some changes to the original client
+			// to assert that they aren't picked up in the clone
+			c.Tags([]string{"Expected"})
+			c.CustomData("bar")
+			newRequest, _ := http.NewRequest("POST", "https://my.api.io", nil)
+			c.Request(newRequest)
+			c.Version("2.3.4")
+			c.User("user2")
+			c.Silent(true)
+			c.LogToStdOut(true)
+			c.Asynchronous(true)
+			c.CustomGroupingKeyFunction(func(error, PostData)string{return "customGroupingKey"})
+
+			So(clone.silent, ShouldNotResemble, c.silent)
+			So(clone.logToStdOut, ShouldNotResemble, c.logToStdOut)
+			So(clone.asynchronous, ShouldNotResemble, c.asynchronous)
+			So(clone.context.Request, ShouldNotResemble, c.context.Request)
+			So(clone.context.Version, ShouldNotResemble, c.context.Version)
+			So(clone.context.Tags, ShouldNotResemble, c.context.Tags)
+			So(clone.context.CustomData, ShouldNotResemble, c.context.CustomData)
+			So(clone.context.User, ShouldNotResemble, c.context.User)
+			So(clone.context.GetCustomGroupingKey, ShouldNotResemble, c.context.GetCustomGroupingKey)
 		})
 
 		Convey("#Request", func() {
@@ -65,6 +119,30 @@ func TestClient(t *testing.T) {
 			So(c.context.User, ShouldResemble, u)
 		})
 
+		Convey("#Silent", func() {
+			So(c.silent, ShouldBeFalse)
+			c.Silent(true)
+			So(c.silent, ShouldBeTrue)
+		})
+		
+		Convey("#CustomGroupingKeyFunction", func() {
+			So(c.context.GetCustomGroupingKey, ShouldEqual, nil)
+		    c.CustomGroupingKeyFunction(func(error, PostData)string{return "customGroupingKey"})
+			So(c.context.GetCustomGroupingKey, ShouldNotEqual, nil)
+		})
+
+		Convey("#LogToStdOut", func() {
+			So(c.logToStdOut, ShouldBeFalse)
+			c.LogToStdOut(true)
+			So(c.logToStdOut, ShouldBeTrue)
+		})
+
+		Convey("#Asynchronous", func() {
+			So(c.asynchronous, ShouldBeFalse)
+			c.Asynchronous(true)
+			So(c.asynchronous, ShouldBeTrue)
+		})
+
 		Convey("#HandleError", func() {
 			u := "http://www.example.com?foo=bar&fizz[]=buzz&fizz[]=buzz2"
 			r, _ := http.NewRequest("GET", u, nil)
@@ -74,8 +152,10 @@ func TestClient(t *testing.T) {
 				"fizz": []string{"buzz", "buzz2"},
 			}
 			r.Header.Add("Cookie", "cookie1=value1; cookie2=value2")
+			c.Silent(true)
 			c.Request(r)
 			c.apiKey = "key"
+			c.CustomGroupingKeyFunction(func(error, PostData)string{return "customGroupingKey"})
 			c.context.Version = "goconvey"
 			c.context.Tags = []string{"golang", "test"}
 			c.context.CustomData = map[string]string{"foo": "bar"}

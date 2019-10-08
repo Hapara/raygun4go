@@ -1,6 +1,5 @@
 # raygun4go
 [![Build Status](https://travis-ci.org/MindscapeHQ/raygun4go.svg?branch=master)](https://travis-ci.org/MindscapeHQ/raygun4go)
-[![Build status](https://ci.appveyor.com/api/projects/status/9pqk769jaxfxp0bb/branch/master?svg=true)](https://ci.appveyor.com/project/kaeuferportal-oss/raygun4go/branch/master)
 [![Coverage](http://gocover.io/_badge/github.com/MindscapeHQ/raygun4go)](http://gocover.io/github.com/MindscapeHQ/raygun4go)
 [![GoDoc](https://godoc.org/github.com/MindscapeHQ/raygun4go?status.svg)](http://godoc.org/github.com/MindscapeHQ/raygun4go)
 [![GoReportcard](http://goreportcard.com/badge/MindscapeHQ/raygun4go)](http://goreportcard.com/report/MindscapeHQ/raygun4go)
@@ -53,6 +52,19 @@ Method                    | Description
 `Tags([]string)`          | Adds the given tags to the error. These can be used for filtering later.
 `CustomData(interface{})` | Add arbitrary custom data to you error. Will only reach Raygun if it works with `json.Marshal()`.
 `User(string)`            | Add the name of the affected user to the error.
+
+### Custom grouping
+
+By default, the Raygun service will group errors together based on stacktrace content.
+If you have any cases where you want to control the error grouping yourself, then you can provide
+a custom-grouping-key callback function. Below is a simple example of this, that returns a hard-coded
+grouping key, which would cause all errors to be grouped together:
+
+`raygun.CustomGroupingKeyFunction(func(error, raygun4go.PostData)string{return "customGroupingKey"})`
+
+The callback takes the original error, and the Raygun PostData payload structure that is about to be serialized and sent to Raygun.
+In your callback, you can check these values to help build your own grouping key logic based on different cases that you want
+to control. For any error you don't want to group yourself, return an empty string - Raygun will then use the default grouping.
 
 ## Bugs and feature requests
 
